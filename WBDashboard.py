@@ -20,7 +20,7 @@ if fl is not None:
     df = pd.read_csv(filename, encoding = "utf-8")
 else:
     os.chdir(r"C:\Users\icisuser\GIS\Dashboard\Dashboard_vsc")
-    df = pd.read_csv("2024wbtxn43s.csv", encoding = "utf-8")
+    df = pd.read_csv("2024wbtxns43.csv", encoding = "utf-8")
 
 col1, col2 = st.columns((2))
 df["資料日期"] = pd.to_datetime(df["資料日期"])
