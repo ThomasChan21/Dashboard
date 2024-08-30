@@ -4,30 +4,38 @@ import pandas as pd
 import os
 import warnings
 from dotenv import load_dotenv
+from PIL import Image
 warnings.filterwarnings('ignore')
 
 load_dotenv()
 
-st.set_page_config(page_title="全幢及大手成交Dashboard", page_icon=":bar_chart:",layout="wide")
+st.set_page_config(page_title="全幢及大手成交Dashboard(測試版)", page_icon=":bar_chart:",layout="wide")
 
-st.title(" :bar_chart: 全幢及大手成交") 
+st.title(" :bar_chart: 全幢及大手成交Dashboard(測試版)") 
 st.markdown('<style>div.block-container{padding-top:3rem;}</style>',unsafe_allow_html=True)
 
-fl = st.file_uploader(":file_folder: 上載檔案",type=(["csv","txt","xlsx","xls"]))
-if fl is not None:
-    filename = fl.name
-    st.write(filename)
-    df = pd.read_csv(filename, encoding = "utf-8")
-else:
-    os.chdir(r"C:\Users\icisuser\GIS\Dashboard\Dashboard_vsc")
-    df = pd.read_csv("2024wbtxns43.csv", encoding = "utf-8")
+@st.cache_data
+def load_data(file):
+    data = pd.read_csv(file, encoding = "utf-8")
+    return data
+
+fl = st.file_uploader(":file_folder: 上載檔案",type=(["csv"]))
+if fl is None:
+    st.info("請上載 csv 檔案", icon="ℹ️")
+    st.stop()
+
+loaded_df = load_data(fl)
+df = loaded_df[["資料日期","物業地址","全幢or大手","地盤面積","成交價","成交價(億港元)","現樓面面積","現樓面呎價","可建樓面面積","重建呎價","分類","入伙日期","房間數目及每間售價","賣家","買家","資料來源","新聞連結","備註","Date","地區_18區","longitude_lands","latitude_lands"]].copy() 
+
+# create Iamge for 10 types of Properties
+c1, c2, c3, c4, c5, c6, c7, c8, c9, c10 = st.columns((10))
 
 col1, col2 = st.columns((2))
-df["資料日期"] = pd.to_datetime(df["資料日期"])
+df["Date"] = pd.to_datetime(df["Date"])
 
 # Getting the min and max date 
-startDate = pd.to_datetime(df["資料日期"]).min()
-endDate = pd.to_datetime(df["資料日期"]).max()
+startDate = pd.to_datetime(df["Date"]).min()
+endDate = pd.to_datetime(df["Date"]).max()
 
 with col1:
     date1 = pd.to_datetime(st.date_input("開始日期", startDate))
@@ -35,7 +43,7 @@ with col1:
 with col2:
     date2 = pd.to_datetime(st.date_input("結束日期", endDate))
 
-df = df[(df["資料日期"] >= date1) & (df["資料日期"] <= date2)].copy()
+df = df[(df["Date"] >= date1) & (df["Date"] <= date2)].copy()
 
 st.sidebar.header("選擇篩選類別: ")
 # Create for 地區
@@ -76,11 +84,14 @@ else:
 
 type_df = filtered_df.groupby(by = ["分類"], as_index = False)["成交價(億港元)"].count()
 type_df.rename(columns={"成交價(億港元)": "成交宗數"}, inplace=True)
+type_df["newIndex"] = type_df["分類"]
+# print(type_df)"
+type_df_indexed = type_df.sort_values(by="成交宗數", ascending=False).set_index("newIndex")
 # print(type_df)
 
 with col1:
     st.subheader("全幢及大手成交(宗數，按物業類型)")
-    fig = px.bar(type_df, x = "分類", y = "成交宗數", text = ['{:.0f}宗'.format(x) for x in type_df["成交宗數"]], color="分類", template = "seaborn")
+    fig = px.bar(type_df_indexed, x = "分類", y = "成交宗數", text = ['{:.0f}宗'.format(x) for x in type_df_indexed["成交宗數"]], color="分類", template = "seaborn")
     fig.update_layout(xaxis_title="物業類型", showlegend=False)
     st.plotly_chart(fig,use_container_width=True, height = 200)
 
@@ -91,30 +102,113 @@ with col2:
     fig.update_layout(xaxis_title="物業類型", showlegend=False)
     st.plotly_chart(fig,use_container_width=True)
  
-# print(filtered_df["成交價(億港元)"],'\n', filtered_df["成交價"])
-# print(year_df["成交宗數"])
+# Metric for 10 class of Properties
+print(type_df) # test what is inside this df
+print("=======================")
+print(type_df_indexed) # test what is inside this df
+print("=======================")
+#print(type_df_indexed.loc["住宅","成交宗數"])
+
+with c1:
+    image01 = Image.open('./classphoto/住宅.jpg')
+    st.image(image01, caption="住宅")
+    if type_df_indexed["分類"].isin(["住宅"]).any():
+        st.metric(label="住宅成交宗數", value=type_df_indexed.loc["住宅","成交宗數"])
+    else:
+        st.metric(label="住宅成交宗數", value=0)
+with c6:
+    image02 = Image.open('./classphoto/工業.jpg')
+    st.image(image02, caption="工業")
+    if type_df_indexed["分類"].isin(["工業"]).any():
+        st.metric(label="工業成交宗數", value=type_df_indexed.loc["工業","成交宗數"])
+    else:
+        st.metric(label="工業成交宗數", value=0)
+with c2:
+    image03 = Image.open('./classphoto/商業.jpg')
+    st.image(image03, caption="商業")
+    if type_df_indexed["分類"].isin(["商業"]).any():
+        st.metric(label="商業成交宗數", value=type_df_indexed.loc["商業","成交宗數"])
+    else:
+        st.metric(label="商業成交宗數", value=0)
+with c4:
+    image04 = Image.open('./classphoto/商場.jpg')
+    st.image(image04, caption="商舖/商場")
+    if type_df_indexed["分類"].isin(["商場或商鋪或基座商鋪"]).any():
+        st.metric(label="商舖/商場成交宗數", value=type_df_indexed.loc["商場或商鋪或基座商鋪","成交宗數"])
+    else:
+        st.metric(label="商舖/商場成交宗數", value=0)
+
+with c5:
+    image05 = Image.open('./classphoto/舊樓.jpg')
+    st.image(image05, caption="舊樓")
+    if type_df_indexed["分類"].isin(["1960年及之前入伙舊樓"]).any():
+        st.metric(label="舊樓成交宗數", value=type_df_indexed.loc["1960年及之前入伙舊樓","成交宗數"])
+    else:
+        st.metric(label="舊樓成交宗數", value=0)
+with c8:
+    image06 = Image.open('./classphoto/酒店.jpg')
+    st.image(image06, caption="酒店")
+    if type_df_indexed["分類"].isin(["酒店"]).any():
+        st.metric(label="酒店成交宗數", value=type_df_indexed.loc["酒店","成交宗數"])
+    else:
+        st.metric(label="酒店成交宗數", value=0)
+with c9:
+    image07 = Image.open('./classphoto/車位.jpg')
+    st.image(image07, caption="車位")
+    if type_df_indexed["分類"].isin(["車位或停車場大廈"]).any():
+        st.metric(label="車位成交宗數", value=type_df_indexed.loc["車位或停車場大廈","成交宗數"])
+    else:
+        st.metric(label="車位成交宗數", value=0)
+with c3:
+    image08 = Image.open('./classphoto/地盤.jpg')
+    st.image(image08, caption="地盤")
+    if type_df_indexed["分類"].isin(["地盤（包括強拍）"]).any():
+        st.metric(label="地盤成交宗數", value=type_df_indexed.loc["地盤（包括強拍）","成交宗數"])
+    else:
+        st.metric(label="地盤成交宗數", value=0)
+with c7:
+    image09 = Image.open('./classphoto/商住.jpg')
+    st.image(image09, caption="商住")
+    if type_df_indexed["分類"].isin(["商住"]).any():
+        st.metric(label="商住成交宗數", value=type_df_indexed.loc["商住","成交宗數"])
+    else:
+        st.metric(label="商住成交宗數", value=0)
+with c10:
+    image10 = Image.open('./classphoto/其他.jpg')
+    st.image(image10, caption="其他")
+    if type_df_indexed["分類"].isin(["其他（包括學校、戲院、農地等）"]).any():
+        st.metric(label="其他成交宗數", value=type_df_indexed.loc["其他（包括學校、戲院、農地等）","成交宗數"])
+    else:
+        st.metric(label="其他成交宗數", value=0)
 
 # view Data
-
-cl1, cl2 = st.columns((2))
-with cl1:
-    with st.expander("成交資料 (宗數) - viewData"):
-        st.write(type_df.style.background_gradient(cmap="Blues"))
-        csv = type_df.to_csv(index = False).encode('utf-8')
-        st.download_button("Download Data", data = csv, file_name = "成交資料_宗數.csv", mime = "text/csv",
-                            help = 'Click here to download the data as a CSV file')
-
-with cl2:
-    with st.expander("成交資料 (金額比例) - viewData"):
-        # region = filtered_df.groupby(by = "Region", as_index = False)["Sales"].sum()
-        st.write(filtered_df.style.background_gradient(cmap="Oranges"))
-        csv = filtered_df.to_csv(index = False).encode('utf-8')
-        st.download_button("Download Data", data = csv, file_name = "成交資料_金額.csv", mime = "text/csv",
-                        help = 'Click here to download the data as a CSV file')
-        
-# filtered_df["month_year"] = filtered_df["Order Date"].dt.to_period("M")
-# st.subheader('Time Series Analysis')
     
+with st.expander("篩選資料 - viewData"):
+    # region = filtered_df.groupby(by = "Region", as_index = False)["Sales"].sum()
+    st.dataframe(filtered_df.style.background_gradient(cmap="Oranges"), 
+                 column_order=("資料日期","地區_18區","物業地址","全幢or大手","地盤面積","成交價(億港元)","現樓面面積","現樓面呎價","可建樓面面積","重建呎價","分類","入伙日期","照片","房間數目及每間售價","賣家","買家","資料來源","新聞連結","備註"),
+                 column_config={
+                     "資料日期": st.column_config.DateColumn(
+                         "資料日期",
+                         format="YYYY.MM.DD",
+                     ), # Note: column "資料日期" cannot be used because it enclose time element which is added fr above min and max --> see line 35 and 36
+                     "新聞連結": st.column_config.LinkColumn(
+                        validate=r"^https://[a-z]+\.streamlit\.app$",
+                        max_chars=150,
+                        display_text=r"https://(.*?)\.streamlit\.app"
+                     ),
+                     "地區_18區": st.column_config.TextColumn(
+                         "地區"
+                     ),
+                    "全幢or大手": st.column_config.TextColumn(
+                         "全幢或大手"
+                     )
+                 })
+    # st.write(filtered_df.style.background_gradient(cmap="Oranges"))
+    csv = filtered_df.to_csv(index = False, encoding='utf-8')
+    st.download_button("Download Data", data = csv, file_name = "篩選資料_成交記錄.csv", mime = "text/csv", help = 'Click here to download the data as a CSV file')
+        
+
 # Create a Map
 # 顯示地圖，將台北市各區域標記在地圖上，大小和顏色表示人口數
 
@@ -123,18 +217,15 @@ filtered_df.rename(columns={"longitude_lands": "lon"}, inplace=True)
 
 st.map(data = filtered_df, #size = filtered_df["成交價(億港元)"]
     # color = filtered_df["成交價(億港元)"]
-    size = 5,
+    size = 6,
     use_container_width=True
 )
  
-# st.map(df_boundaries,
-#     latitude='南緯度',
-#     longitude='西經度', size=100, color='#0044ff')
-     
-print(filtered_df)   
+print("\n")
+
 
 # Create Time Series Analysis  
-filtered_df["month_year"] = filtered_df["資料日期"].dt.to_period("M")
+filtered_df["month_year"] = filtered_df["Date"].dt.to_period("M")
 st.subheader('時間序列分析')
 
 linechart = pd.DataFrame(filtered_df.groupby(filtered_df["month_year"].dt.strftime("%Y : %b"))["成交價(億港元)"].sum()).reset_index()
