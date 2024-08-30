@@ -25,7 +25,7 @@ if fl is None:
     st.stop()
 
 loaded_df = load_data(fl)
-df = loaded_df[["資料日期","物業地址","全幢or大手","地盤面積","成交價","成交價(億港元)","現樓面面積","現樓面呎價","可建樓面面積","重建呎價","分類","入伙日期","房間數目及每間售價","賣家","買家","資料來源","新聞連結","備註","Date","地區_18區","longitude_lands","latitude_lands"]].copy() 
+df = loaded_df[["資料日期","物業地址","全幢or非全幢","地盤面積","成交價","成交價(億港元)","現樓面面積","現樓面呎價","可建樓面面積","重建呎價","分類","入伙日期","房間數目及每間售價","賣家","買家","資料來源","新聞連結","備註","Date","地區_18區","longitude_lands","latitude_lands"]].copy() 
 
 # create Iamge for 10 types of Properties
 c1, c2, c3, c4, c5, c6, c7, c8, c9, c10 = st.columns((10))
@@ -46,6 +46,16 @@ with col2:
 df = df[(df["Date"] >= date1) & (df["Date"] <= date2)].copy()
 
 st.sidebar.header("選擇篩選類別: ")
+
+# Create for Date (to be followed)
+
+#with st.sidebar:
+#    date1 = pd.to_datetime(st.date_input("開始日期", startDate))
+#    date2 = pd.to_datetime(st.date_input("結束日期", endDate))
+
+#    df = df[(df["Date"] >= date1) & (df["Date"] <= date2)].copy()
+
+
 # Create for 地區
 district = st.sidebar.multiselect("選擇地區", df["地區_18區"].unique())
 if not district:
@@ -61,9 +71,9 @@ else:
     df3 = df2[df2["分類"].isin(building_type)]
 
 # Create for 全幢或大手
-wb = st.sidebar.multiselect("選擇全幢或大手",df3["全幢or大手"].unique())
+wb = st.sidebar.multiselect("選擇全幢或非全幢",df3["全幢or非全幢"].unique())
 
-# Filter the data based on 地區, 物業類型 and 全幢或大手
+# Filter the data based on 地區, 物業類型 and 全幢或非全幢
 
 if not district and not building_type and not wb:
     filtered_df = df
@@ -72,15 +82,15 @@ elif not building_type and not wb:
 elif not district and not wb:
     filtered_df = df[df["分類"].isin(building_type)]
 elif building_type and wb:
-    filtered_df = df3[df["分類"].isin(building_type) & df3["全幢or大手"].isin(wb)]
+    filtered_df = df3[df["分類"].isin(building_type) & df3["全幢or非全幢"].isin(wb)]
 elif district and wb:
-    filtered_df = df3[df["地區_18區"].isin(district) & df3["全幢or大手"].isin(wb)]
+    filtered_df = df3[df["地區_18區"].isin(district) & df3["全幢or非全幢"].isin(wb)]
 elif district and building_type:
     filtered_df = df3[df["地區_18區"].isin(district) & df3["分類"].isin(building_type)]
 elif wb:
-    filtered_df = df3[df3["全幢or大手"].isin(wb)]
+    filtered_df = df3[df3["全幢or非全幢"].isin(wb)]
 else:
-    filtered_df = df3[df3["地區_18區"].isin(district) & df3["分類"].isin(building_type) & df3["全幢or大手"].isin(wb)]
+    filtered_df = df3[df3["地區_18區"].isin(district) & df3["分類"].isin(building_type) & df3["全幢or非全幢"].isin(wb)]
 
 type_df = filtered_df.groupby(by = ["分類"], as_index = False)["成交價(億港元)"].count()
 type_df.rename(columns={"成交價(億港元)": "成交宗數"}, inplace=True)
@@ -186,7 +196,7 @@ with c10:
 with st.expander("篩選資料 - viewData"):
     # region = filtered_df.groupby(by = "Region", as_index = False)["Sales"].sum()
     st.dataframe(filtered_df.style.background_gradient(cmap="Oranges"), 
-                 column_order=("資料日期","地區_18區","物業地址","全幢or大手","地盤面積","成交價(億港元)","現樓面面積","現樓面呎價","可建樓面面積","重建呎價","分類","入伙日期","照片","房間數目及每間售價","賣家","買家","資料來源","新聞連結","備註"),
+                 column_order=("資料日期","地區_18區","物業地址","全幢or非全幢","地盤面積","成交價(億港元)","現樓面面積","現樓面呎價","可建樓面面積","重建呎價","分類","入伙日期","照片","房間數目及每間售價","賣家","買家","資料來源","新聞連結","備註"),
                  column_config={
                      "資料日期": st.column_config.DateColumn(
                          "資料日期",
@@ -200,8 +210,8 @@ with st.expander("篩選資料 - viewData"):
                      "地區_18區": st.column_config.TextColumn(
                          "地區"
                      ),
-                    "全幢or大手": st.column_config.TextColumn(
-                         "全幢或大手"
+                    "全幢or非全幢": st.column_config.TextColumn(
+                         "全幢或非全幢"
                      )
                  })
     # st.write(filtered_df.style.background_gradient(cmap="Oranges"))
