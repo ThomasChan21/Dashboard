@@ -26,7 +26,7 @@ def load_data(file):
         df = pd.read_csv(file)
     else:
         # Use relative path to load the CSV file
-        base_dir = os.path.dirname(__file__)
+        base_dir = os.path.dirname(os.path.abspath(__file__))
         relative_path = os.path.join(base_dir, "2024wbtxns43.csv")
         df = pd.read_csv(relative_path)
     
@@ -39,7 +39,7 @@ def load_data(file):
 @st.cache_data
 def get_image_path(filename):
     # Use relative path to get the image file
-    base_dir = os.path.dirname(__file__)
+    base_dir = os.path.dirname(os.path.abspath(__file__))
     relative_path = os.path.join(base_dir, "images", filename[-12:])
     return relative_path if os.path.exists(relative_path) else None
 
@@ -269,18 +269,21 @@ with column2:
     fig.update_layout(xaxis_title="物業類型", showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
 
+# Define the base directory
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
 # Create columns for displaying images of 10 types of properties
 property_images = {
-    "住宅": './classphoto/住宅.jpg',
-    "工業": './classphoto/工業.jpg',
-    "商業": './classphoto/商業.jpg',
-    "商場或商鋪或基座商鋪": './classphoto/商場.jpg',
-    "1960年及之前入伙舊樓": './classphoto/舊樓.jpg',
-    "酒店": './classphoto/酒店.jpg',
-    "車位或停車場大廈": './classphoto/車位.jpg',
-    "地盤（包括強拍）": './classphoto/地盤.jpg',
-    "商住": './classphoto/商住.jpg',
-    "其他（包括學校、戲院、農地等）": './classphoto/其他.jpg'
+    "住宅": os.path.join(base_dir, 'classphoto/住宅.jpg'),
+    "工業": os.path.join(base_dir, 'classphoto/工業.jpg'),
+    "商業": os.path.join(base_dir, 'classphoto/商業.jpg'),
+    "商場或商鋪或基座商鋪": os.path.join(base_dir, 'classphoto/商場.jpg'),
+    "1960年及之前入伙舊樓": os.path.join(base_dir, 'classphoto/舊樓.jpg'),
+    "酒店": os.path.join(base_dir, 'classphoto/酒店.jpg'),
+    "車位或停車場大廈": os.path.join(base_dir, 'classphoto/車位.jpg'),
+    "地盤（包括強拍）": os.path.join(base_dir, 'classphoto/地盤.jpg'),
+    "商住": os.path.join(base_dir, 'classphoto/商住.jpg'),
+    "其他（包括學校、戲院、農地等）": os.path.join(base_dir, 'classphoto/其他.jpg')
 }
 
 columns = [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10]
