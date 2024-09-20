@@ -25,8 +25,11 @@ def load_data(file):
     if file is not None:
         df = pd.read_csv(file)
     else:
-        os.chdir(r"C:\Users\icisuser\GIS\Dashboard\Dashboard_vsc")
-        df = pd.read_csv("2024wbtxns43.csv")
+        # Use relative path to load the CSV file
+        base_dir = os.path.dirname(__file__)
+        relative_path = os.path.join(base_dir, "2024wbtxns43.csv")
+        df = pd.read_csv(relative_path)
+    
     df = df[["資料日期","物業地址","全幢or非全幢","地盤面積","成交價","成交價(億港元)","現樓面面積","現樓面呎價","可建樓面面積","重建呎價","照片", "分類","入伙日期","房間數目及每間售價","賣家","買家","資料來源","新聞連結","備註","Date","地區_18區","longitude_lands","latitude_lands"]].copy()
     df = df.fillna('N/A')
     df = df.astype(str)
@@ -35,8 +38,10 @@ def load_data(file):
 # Cache the image path retrieval function
 @st.cache_data
 def get_image_path(filename):
-    full_path = os.path.join(r"C:\Users\icisuser\GIS\Dashboard\Dashboard_vsc\images", filename[-12:])
-    return full_path if os.path.exists(full_path) else None
+    # Use relative path to get the image file
+    base_dir = os.path.dirname(__file__)
+    relative_path = os.path.join(base_dir, "images", filename[-12:])
+    return relative_path if os.path.exists(relative_path) else None
 
 # Cache the image base64 encoding function
 @st.cache_data
