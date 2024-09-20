@@ -5,6 +5,9 @@ import os
 import warnings
 from dotenv import load_dotenv
 from PIL import Image
+import folium
+from streamlit_folium import st_folium
+
 warnings.filterwarnings('ignore')
 
 load_dotenv()
@@ -14,18 +17,19 @@ st.set_page_config(page_title="全幢及大手成交Dashboard(測試版)", page_
 st.title(" :bar_chart: 全幢及大手成交Dashboard(測試版)") 
 st.markdown('<style>div.block-container{padding-top:3rem;}</style>',unsafe_allow_html=True)
 
-@st.cache_data
-def load_data(file):
-    data = pd.read_csv(file, encoding = "utf-8")
-    return data
 
 fl = st.file_uploader(":file_folder: 上載檔案",type=(["csv"]))
-if fl is None:
-    st.info("請上載 csv 檔案", icon="ℹ️")
-    st.stop()
+if fl is not None:
+    filename = fl.name
+    st.write(filename)
+    df = pd.read_csv(filename)
+else: 
+    os.chdir(r"D:\GIS\Dashboard\Dashboard")
+    df = pd.read_csv("2024wbtxns43.csv")
 
-loaded_df = load_data(fl)
-df = loaded_df[["資料日期","物業地址","全幢or非全幢","地盤面積","成交價","成交價(億港元)","現樓面面積","現樓面呎價","可建樓面面積","重建呎價","分類","入伙日期","房間數目及每間售價","賣家","買家","資料來源","新聞連結","備註","Date","地區_18區","longitude_lands","latitude_lands"]].copy() 
+
+#loaded_df = load_data(fl)
+df = df[["資料日期","物業地址","全幢or非全幢","地盤面積","成交價","成交價(億港元)","現樓面面積","現樓面呎價","可建樓面面積","重建呎價","分類","入伙日期","房間數目及每間售價","賣家","買家","資料來源","新聞連結","備註","Date","地區_18區","longitude_lands","latitude_lands"]].copy() 
 
 # create Iamge for 10 types of Properties
 c1, c2, c3, c4, c5, c6, c7, c8, c9, c10 = st.columns((10))
@@ -48,13 +52,6 @@ df = df[(df["Date"] >= date1) & (df["Date"] <= date2)].copy()
 st.sidebar.header("選擇篩選類別: ")
 
 # Create for Date (to be followed)
-
-#with st.sidebar:
-#    date1 = pd.to_datetime(st.date_input("開始日期", startDate))
-#    date2 = pd.to_datetime(st.date_input("結束日期", endDate))
-
-#    df = df[(df["Date"] >= date1) & (df["Date"] <= date2)].copy()
-
 
 # Create for 地區
 district = st.sidebar.multiselect("選擇地區", df["地區_18區"].unique())
@@ -99,25 +96,99 @@ type_df["newIndex"] = type_df["分類"]
 type_df_indexed = type_df.sort_values(by="成交宗數", ascending=False).set_index("newIndex")
 # print(type_df)
 
-with col1:
+# Create a Map
+
+filtered_df.rename(columns={"latitude_lands": "lat"}, inplace=True)
+filtered_df.rename(columns={"longitude_lands": "lon"}, inplace=True)
+
+# st.map(data = filtered_df, #size = filtered_df["成交價(億港元)"]
+#     # color = filtered_df["成交價(億港元)"]
+#     size = 6,
+#     use_container_width=True
+# )
+
+map = folium.Map(location=[22.39,114.14], zoom_start=11, min_zoom=11, max_zoom=20)
+
+folium.TileLayer(
+    tiles="https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/WGS84/{z}/{x}/{y}.png",
+    attr="Lands Department",
+    name="Topographical Map",
+    max_native_zoom=20
+).add_to(map)
+
+folium.TileLayer(
+    tiles="https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/tc/WGS84/{z}/{x}/{y}.png",
+    attr="LandsD Label",
+    name="LandsD Label",
+    max_native_zoom=20,
+    overlay=True
+).add_to(map)
+
+folium.LayerControl().add_to(map)
+
+# Replace NaN values with a placeholder (e.g., 'N/A')
+df = df.fillna('N/A')
+
+#using the df loaded at the start
+st.write(df) # Note: the latitude_lands and longtitude_lands have been changed to lon and lat.
+
+# Add popup content with clickable link
+df['Popup'] = df.apply(lambda row: f"""
+    <b>物業地址 :</b> {row['物業地址']}<br>
+    <b>成交價 :</b> {row['成交價']}<br>
+    <b>地盤面積 :</b> {row['地盤面積']}<br>
+    <b>現樓面面積 :</b> {row['現樓面面積']}<br>
+    <b>現樓面呎價 :</b> {row['現樓面呎價']}<br>
+    <b>可建樓面面積 :</b> {row['可建樓面面積']}<br>
+    <b>重建呎價 :</b> {row['重建呎價']}<br>
+    <b>分類 :</b> {row['分類']}<br>
+    <b>全幢或非全幢 :</b> {row['全幢or非全幢']}<br>
+    <b>入伙日期 :</b> {row['入伙日期']}<br>
+    <b>房間數目及每間售價 :</b> {row['房間數目及每間售價']}<br>
+    <b>賣家 :</b> {row['賣家']}<br>
+    <b>買家 :</b> {row['買家']}<br>
+    <b>資料來源 :</b> {row['資料來源']}<br>
+    <b>新聞連結 :</b> <a href="{row['新聞連結']}" target="_blank">Click here</a><br>
+    <b>資料日期 :</b> {row['資料日期']}<br>
+    <b>備註 :</b> {row['備註']}<br>
+    """, axis=1)
+
+
+print(df.dtypes)
+
+# Convert all columns to strings (becasue of Serialization of dataframe to Arrow table)
+df = df.astype(str)
+
+print(df.dtypes)
+
+# Add markers to the map
+for _, row in df.iterrows():
+    folium.Marker(
+        location=[float(row['lat']), float(row['lon'])],
+        popup=folium.Popup(row['Popup'], max_width=250),
+        icon=folium.Icon(color='pink',icon="location-arrow", prefix='fa') 
+    ).add_to(map)
+
+st_map = st_folium(map, width="75%", height=650)
+
+
+
+column1, column2 = st.columns((2))
+
+#display bar chart and pie chart
+with column1:
     st.subheader("全幢及大手成交(宗數，按物業類型)")
     fig = px.bar(type_df_indexed, x = "分類", y = "成交宗數", text = ['{:.0f}宗'.format(x) for x in type_df_indexed["成交宗數"]], color="分類", template = "seaborn")
     fig.update_layout(xaxis_title="物業類型", showlegend=False)
     st.plotly_chart(fig,use_container_width=True, height = 200)
 
-with col2:
+with column2:
     st.subheader("全幢及大手成交(金額比例，按物業類型)")
     fig = px.pie(filtered_df, values = "成交價(億港元)", names = "分類", hole = 0.5)
     fig.update_traces(text = filtered_df["分類"], textposition = "outside")
     fig.update_layout(xaxis_title="物業類型", showlegend=False)
     st.plotly_chart(fig,use_container_width=True)
  
-# Metric for 10 class of Properties
-print(type_df) # test what is inside this df
-print("=======================")
-print(type_df_indexed) # test what is inside this df
-print("=======================")
-#print(type_df_indexed.loc["住宅","成交宗數"])
 
 with c1:
     image01 = Image.open('./classphoto/住宅.jpg')
@@ -219,21 +290,6 @@ with st.expander("篩選資料 - viewData"):
     st.download_button("Download Data", data = csv, file_name = "篩選資料_成交記錄.csv", mime = "text/csv", help = 'Click here to download the data as a CSV file')
         
 
-# Create a Map
-# 顯示地圖，將台北市各區域標記在地圖上，大小和顏色表示人口數
-
-filtered_df.rename(columns={"latitude_lands": "lat"}, inplace=True)
-filtered_df.rename(columns={"longitude_lands": "lon"}, inplace=True)
-
-st.map(data = filtered_df, #size = filtered_df["成交價(億港元)"]
-    # color = filtered_df["成交價(億港元)"]
-    size = 6,
-    use_container_width=True
-)
- 
-print("\n")
-
-
 # Create Time Series Analysis  
 filtered_df["month_year"] = filtered_df["Date"].dt.to_period("M")
 st.subheader('時間序列分析')
@@ -249,8 +305,6 @@ with st.expander("View Data of TimeSeries:"):
     
     
     
-    
-    
-    
+     
     
     
