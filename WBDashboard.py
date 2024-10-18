@@ -9,8 +9,11 @@ import folium
 from streamlit_folium import st_folium
 from folium.plugins import Fullscreen
 import base64
+import time
 
 warnings.filterwarnings('ignore')
+
+start_time = time.time()
 
 load_dotenv()
 
@@ -340,3 +343,8 @@ with st.expander("時間序列統計 - 可下載CSV檔案"):
     st.write(linechart.T.style.background_gradient(cmap="Blues"))
     csv = linechart.to_csv(index=False).encode("utf-8")
     st.download_button('Download Data', data=csv, file_name="TimeSeries.csv", mime='text/csv')
+
+
+end_time = time.time()
+
+st.write(f"Time taken to run wbdashboard.py: {end_time - start_time} seconds")
