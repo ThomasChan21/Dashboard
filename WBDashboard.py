@@ -33,7 +33,7 @@ def load_data(file):
         relative_path = os.path.join(base_dir, "2024wbtxns43.csv")
         df = pd.read_csv(relative_path)
     
-    df = df[["資料日期","物業地址","全幢or非全幢","地盤面積","成交價","成交價(億港元)","現樓面面積","現樓面呎價","可建樓面面積","重建呎價","照片", "分類","入伙日期","房間數目及每間售價","賣家","買家","資料來源","新聞連結","備註","Date","地區_18區","longitude_lands","latitude_lands"]].copy()
+    df = df[["資料日期","物業地址","全幢or非全幢","地盤面積","成交價","成交價(億港元)","現樓面面積","現樓面呎價","可建樓面面積","重建呎價","照片", "分類","入伙日期","房間數目及每間售價","賣家","買家","資料來源","新聞連結","備註","Date","地區_18區","longitude_lands","latitude_lands"]]
     df = df.fillna('N/A')
     df = df.astype(str)
     return df
@@ -166,7 +166,7 @@ with col2:
 # Cache the filtered data
 @st.cache_data
 def filter_data(df, date1, date2, district, building_type, wb):
-    df = df[(df["Date"] >= date1) & (df["Date"] <= date2)].copy()
+    df = df[(df["Date"] >= date1) & (df["Date"] <= date2)]
     if district:
         df = df[df["地區_18區"].isin(district)]
     if building_type:
@@ -193,6 +193,9 @@ type_df = filtered_df.groupby(by=["分類"], as_index=False)["成交價(億港�
 type_df.rename(columns={"成交價(億港元)": "成交宗數"}, inplace=True)
 type_df["newIndex"] = type_df["分類"]
 type_df_indexed = type_df.sort_values(by="成交宗數", ascending=False).set_index("newIndex")
+
+
+col_map, = st.columns((1))
 
 # Create a Folium map
 map = folium.Map(
@@ -253,8 +256,9 @@ def display_marker():
 
 display_marker()
 
-# Display the map in Streamlit
-st_map = st_folium(map, width="100%", height=650) 
+with col_map:
+    # Display the map in Streamlit
+    st_folium(map, use_container_width=True, returned_objects=[]) 
 
 # plot two charts 
 column1, column2 = st.columns((2))
@@ -296,8 +300,10 @@ for col, prop_type in zip(columns, property_types):
     with col:
         image = Image.open(property_images[prop_type])
         if prop_type == "其他（包括學校、戲院、農地等）":
-            prop_type = "其他（包括學校、戲院 等）"
-        st.image(image, caption=prop_type)
+           image_caption = "其他"
+        else:  
+           image_caption = prop_type 
+        st.image(image, caption=image_caption)
         if type_df_indexed["分類"].isin([prop_type]).any():
             st.metric(label=f"{prop_type}成交宗數", value=type_df_indexed.loc[prop_type, "成交宗數"])
         else:
