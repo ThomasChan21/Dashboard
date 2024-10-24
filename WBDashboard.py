@@ -195,7 +195,7 @@ type_df["newIndex"] = type_df["分類"]
 type_df_indexed = type_df.sort_values(by="成交宗數", ascending=False).set_index("newIndex")
 
 
-col_map, = st.columns((1))
+# col_map, = st.columns((1))
 
 # Create a Folium map
 map = folium.Map(
@@ -256,9 +256,19 @@ def display_marker():
 
 display_marker()
 
-with col_map:
+with st.container():
     # Display the map in Streamlit
-    st_folium(map, use_container_width=True, returned_objects=[]) 
+    st_folium(map, use_container_width=True, height=650, returned_objects=[]) 
+
+st.html(
+    """
+    <style>
+        iframe {
+            height: 650px !important;
+        }
+    </style>
+    """
+)
 
 # plot two charts 
 column1, column2 = st.columns((2))
