@@ -258,7 +258,7 @@ display_marker()
 
 with st.container():
     # Display the map in Streamlit
-    st_folium(map, use_container_width=True, height=650, returned_objects=[]) 
+    st_folium(map, use_container_width=True, returned_objects=[]) 
 
 st.html(
     """
